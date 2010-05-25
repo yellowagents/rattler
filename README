@@ -1,0 +1,99 @@
+Network-emitting Accelerometer Protocol
+=======================================
+
+This protocol defines a means through which accelerometer-enabled devices can
+send, and other devices receive, accelerometer data via an IP network.
+
+The protocol is realtime and so is best deployed on a LAN-basis. The transport
+used is UDP, because reliability is considered a convenience at best.
+
+Encapsulation
+-------------
+
+Each datagram is encapsuled in a four-byte header::
+
+    +---------------+---------------+-----------------+
+    | uint16_t type | uint16_t size | data...         |
+    +---------------+---------------+-----------------+
+
+The type defines what kind of data the datagram contains.
+See `Type definitions`_.
+
+The size says how long *the entire datagram* is, including its header. (But of
+course not including its UDP and IP headers.)
+
+Following the two header fields is the data, which differs in structure from
+message type to message type.
+
+Message targetting
+------------------
+
+Each sending device can either broadcast the messages it sends, or unicast to a
+specific pre-configured host. In the future this might be possible to do via
+some means of remote configuration.
+
+The UDP port used both for unicast and broadcast is 5612.
+
+Type definitions
+----------------
+
+0x01, announce
+  The announcement message is intended for future use as a means for devices to
+  identify themselves in a human-readable fashion. It might also be that these
+  messages contain device identification information. (DUID and the likes.)
+
+  **This code is reserved.**
+
+0x02, measurement
+  The essence of the protocol, see `Measurement data`_
+
+Measurement data
+----------------
+
+The measurement message contains four values::
+
+    +-------------------+-----------+-----------+-----------+
+    | float32 timestamp | float64 x | float64 y | float64 z |
+    +-------------------+-----------+-----------+-----------+
+
+The encoding of the floating-point data is as specified by IEEE 754, in network
+order (i.e. big endian).
+
+This means to say that the following little-endian 32-bit float ``12.34``::
+
+    a4 70 45 41
+
+Would be encoded on the wire as::
+
+    41 45 70 af
+
+The timestamp *is not* expected to be relative to any meaningful definition of
+time, rather that it increments by exactly 1 for every second passed. This in
+effect means that the receiver has to compensate to get human-readable
+timestamps. A suggestion for how this problem is to be solved can be found in
+`Ordering & time issues`_.
+
+Accelerometer values for each axis is in units of g-force, where a value of 1.0
+represents acceleration of about +1 g along that axis. When a device is
+laying with its back flat on a horizontal surface, the expected values are
+``(x=0, y=0, z=-1)``.
+
+Ordering & time issues
+----------------------
+
+Because UDP is a stateless protocol and does not guarantee the order of
+datagrams, it is necessary for a receiver to check the timestamps of received
+datagrams to ensure that the measurement received is later than the previous.
+
+In the reference implementation, the receiver drops measurements if they are
+older than the most recent measurement. This has the side-effect that it
+ensures only one device's measurements will be received and acted upon.
+
+The reference implementation yields actual timestamps through a fairly simple
+algorithm. It works by noting when the first measurement arrived and what
+timestamp it had, and then compensating by that amount when the next
+measurement arrives.
+
+Of course, such a simple strategy will be desynchronized ever so slightly,
+depending on the latency of the network during the transmission of that first
+measurement.

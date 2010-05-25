@@ -1,0 +1,1 @@
+include rattler.py setup.py MANIFEST.in
