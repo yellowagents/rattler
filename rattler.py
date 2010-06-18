@@ -68,7 +68,7 @@ class Measurement(object):
         r = "<Measurement at %s" % (self.timestamp,)
         if self.source:
             r += " from %s" % (self.source,)
-        r += ": (%f, %f, %f)>" % (self.x, self.y, self.z)
+        r += ": (%+.6f, %+.6f, %+.6f)>" % (self.x, self.y, self.z)
         return r
 
     @property
@@ -157,5 +157,18 @@ def measurements():
         yield m
 
 if __name__ == "__main__":
+    import sys
+
+    outf = sys.stdout
+
+    if sys.platform != "win32":
+        outf.write("Awaiting initial measurement...")
+        outf.flush()
+
     for meas in measurements():
-        print meas
+        if sys.platform != "win32":
+            # The ANSI control code 2K clears the current line.
+            outf.write("\x1b[2K\r%s" % (meas,))  
+        else:
+            outf.write(str(meas) + "\n")
+        outf.flush()
