@@ -25,6 +25,9 @@ But with much greater precision, as the numbers have been cut for brevity's
 sake.
 """
 
+# NOTE Remember to change version in setup.py as well.
+__version__ = "1.0"
+
 import socket
 import struct
 import datetime
