@@ -54,6 +54,12 @@ class StructFormat(str):
         part, rest = data[:self.size], data[self.size:]
         return (struct.unpack(self, part), rest)
 
+def hasattrs(obj, attrs):
+    for attr in attrs:
+        if not hasattr(obj, attr):
+            return False
+    return True
+
 class Measurement(object):
     """A seismological measurement"""
 
@@ -64,12 +70,40 @@ class Measurement(object):
         self.x, self.y, self.z = x, y, z
         self.source = source
 
+    def clone(self, x, y, z):
+        """Make a copy of this instance with new accelerometer data."""
+        return type(self)(self.timestamp, x, y, z, source=self.source)
+
     def __str__(self):
         r = "<Measurement at %s" % (self.timestamp,)
         if self.source:
             r += " from %s" % (self.source,)
         r += ": (%+.6f, %+.6f, %+.6f)>" % (self.x, self.y, self.z)
         return r
+
+    def __add__(self, o):
+        if not hasattrs(o, ("x", "y", "z")):
+            return NotImplemented
+        return self.clone(self.x + o.x, self.y + o.y, self.z + o.z)
+    def __sub__(self, o):
+        if not hasattrs(o, ("x", "y", "z")):
+            return NotImplemented
+        return self.clone(self.x - o.x, self.y - o.y, self.z - o.z)
+
+    def __mul__(self, n):
+        return self.clone(self.x * n, self.y * n, self.z * n)
+    def __div__(self, n):
+        return self.clone(self.x / n, self.y / n, self.z / n)
+    __truediv__ = __div__
+
+    def __neg__(self):
+        return self.clone(-self.x, -self.y, -self.z)
+    def __pos__(self):
+        return self.clone(+self.x, +self.y, +self.z)
+    def __abs__(self):
+        return self.clone(abs(self.x), abs(self.y), abs(self.z))
+    def __invert__(self):
+        return self.clone(~self.x, ~self.y, ~self.z)
 
     @property
     def values(self):
