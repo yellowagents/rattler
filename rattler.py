@@ -26,7 +26,7 @@ sake.
 """
 
 # NOTE Remember to change version in setup.py as well.
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 import socket
 import struct

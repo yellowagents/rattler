@@ -1,1 +1,1 @@
-include rattler.py setup.py MANIFEST.in
+include rattler.py example.py example-pygame.py setup.py MANIFEST.in
